@@ -25,6 +25,12 @@ my @cfg = <$cfg>;
 foreach(@cfg)
 {
     $_ =~ s/\n//gmx;
+    
+    if($_ !~ /^\w+\@\w+:[\/*\w+\/*]*/)
+    {
+        print qq{Invalid parameter: $_\n};
+        next;
+    }
     my ($hostname) = $_ =~ /^.*@(.*):/;
     my $home = $ENV{'HOME'};
     my ($dirname) = $_ =~ /[:|\/](\w+)$/;
