@@ -12,3 +12,5 @@ Usage:
         Options:
         
         -u Unmount mode.
+
+NOTE: It is imperative that you use pubkey authentication.
