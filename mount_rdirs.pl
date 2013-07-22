@@ -29,28 +29,54 @@ foreach(@cfg)
     my $home = $ENV{'HOME'};
     my ($dirname) = $_ =~ /[:|\/](\w+)$/;
     $dirname .= qq{_on_$hostname};
+    my $fullpath = qq{$home/$dirname};
+    my $mounted = `mount|grep sshfs`;
     
-    if(!-d qq{$home/$dirname})
+    if((!-d qq{$fullpath}))
     {
-        mkdir(qq{$home/$dirname})
-            or die qq{Can't create directory $dirname: $!};
+        if($umount == 0)
+        {
+            mkdir(qq{$fullpath})
+                or die qq{Can't create directory $fullpath: $!};
+        }
+    }
+    else
+    {
+        if(($mounted !~ /^$_/gmx) && ($umount == 0))
+        {
+            $fullpath .= qq{_1};
+            mkdir(qq{$fullpath})
+                or die qq{Can't create directory $fullpath: $!};
+        }
+        
+    }
+    if(($umount == 1) && (!-d $fullpath) && ($mounted =~ /$_/gmx))
+    {
+        $fullpath .= qq{_1};
     }
     
     my $cmd;
     
     if ($umount == 1)
     {
-        $cmd = qq{fusermount -u $home/$dirname};
+        $cmd = qq{fusermount -u $fullpath};
     }
     else
     {
-        $cmd = qq{sshfs $_ $home/$dirname/};
+        $cmd = qq{sshfs $_ $fullpath};
     }
+    
     $cmd .= qq{ >/dev/null 2>&1};
     my $cleancmd = $cmd;
     $cleancmd =~ s/\s>\/dev\/null\s2>&1//gmx;
     print qq{Executing: "$cleancmd"...\n};
     system(qq{$cmd});
+    
+    if(($umount == 1) && (-d $fullpath))
+    {
+        rmdir(qq{$fullpath})
+            or die qq{cant delete mount point $fullpath: $!};
+    }
 }
 
 sub helpmsg
