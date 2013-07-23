@@ -72,10 +72,8 @@ foreach(@cfg)
         $cmd = qq{sshfs $_ $fullpath};
     }
     
+    print qq{Executing: "$cmd"...\n};
     $cmd .= qq{ >/dev/null 2>&1};
-    my $cleancmd = $cmd;
-    $cleancmd =~ s/\s>\/dev\/null\s2>&1//gmx;
-    print qq{Executing: "$cleancmd"...\n};
     system(qq{$cmd});
     
     if(($umount == 1) && (-d $fullpath))
