@@ -41,33 +41,32 @@ foreach(@cfg)
     my $dirname = qq{$username on $hostname};
     my $mounted = `mount|grep sshfs`;
     
+#     $dirname =~ s{\s}{\\ }g;
+#     $remote_path =~ s{\s}{\\ }g;
     
-    if(($umount == 0) && (!-d qq{$home/$dirname/$remote_path}))
+    if(($umount == 0))
     {
-        mkpath(qq{$home/$dirname/$remote_path})
-            or die qq{Can't create directory $home/$dirname/$remote_path: $!};
+        my @mkdir = (qq{mkdir}, qq{-p}, qq{$home/$dirname/$remote_path});
+        system(@mkdir);
+#             or die qq{Failed to create directory $home/$dirname/$remote_path: $!};
     }
     
-    my $cmd;
-    $dirname =~ s{\s}{\\ }g;
+    my @cmd;
     
     if ($umount == 1)
     {
-        $cmd = qq{fusermount -u $home/$dirname/$remote_path};
+        @cmd = (qq{fusermount}, qq{-u}, qq{$home/$dirname/$remote_path});
     }
     else
     {
-        $cmd = qq{sshfs $_ $home/$dirname/$remote_path};
+        @cmd = (qq{sshfs}, qq{$_}, qq{$home/$dirname/$remote_path});
     }
     
-    print qq{Executing: "$cmd"...\n};
-    $cmd .= qq{ >/dev/null 2>&1};
-    $ret = system(qq{$cmd});
-    
-    if(($umount == 1) && (-d qq{$home/$dirname/$remote_path}) && ($ret == 0))
+#     push(@cmd, qq{ >/dev/null 2>&1});
+    $ret = system(@cmd);
+    if($ret != 0)
     {
-        rmtree(qq{$home/$dirname})
-            or die qq{cant delete $home/$dirname: $!};
+        print qq{failed to mount $_: $?\n};
     }
 }
 
