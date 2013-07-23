@@ -2,6 +2,8 @@
 
 use warnings;
 use strict;
+use File::Path qw(mkpath rmtree);
+
 my $umount = 0;
 sub helpmsg;
 
@@ -21,6 +23,8 @@ open(my $cfg, "<", "mount_rdirs.cfg")
     or die qq{Can't open config file: $!};
     
 my @cfg = <$cfg>;
+my $home = $ENV{'HOME'};
+my $ret;
 
 foreach(@cfg)
 {
@@ -32,54 +36,38 @@ foreach(@cfg)
         next;
     }
     my ($hostname) = $_ =~ /^.*@(.*):/;
-    my $home = $ENV{'HOME'};
-    my ($dirname) = $_ =~ /[:|\/](\w+)$/;
-    $dirname .= qq{_on_$hostname};
-    my $fullpath = qq{$home/$dirname};
+    my ($username) = $_ =~ /^(.*)\@/;
+    my ($remote_path) = $_ =~ /:([\/*\w+\/*]+)$/;
+    my $dirname = qq{$username on $hostname};
     my $mounted = `mount|grep sshfs`;
     
-    if((!-d qq{$fullpath}))
+    
+    if(($umount == 0) && (!-d qq{$home/$dirname/$remote_path}))
     {
-        if($umount == 0)
-        {
-            mkdir(qq{$fullpath})
-                or die qq{Can't create directory $fullpath: $!};
-        }
-    }
-    else
-    {
-        if(($mounted !~ /^$_/gmx) && ($umount == 0))
-        {
-            $fullpath .= qq{_1};
-            mkdir(qq{$fullpath})
-                or die qq{Can't create directory $fullpath: $!};
-        }
-        
-    }
-    if(($umount == 1) && (!-d $fullpath) && ($mounted =~ /$_/gmx))
-    {
-        $fullpath .= qq{_1};
+        mkpath(qq{$home/$dirname/$remote_path})
+            or die qq{Can't create directory $home/$dirname/$remote_path: $!};
     }
     
     my $cmd;
+    $dirname =~ s{\s}{\\ }g;
     
     if ($umount == 1)
     {
-        $cmd = qq{fusermount -u $fullpath};
+        $cmd = qq{fusermount -u $home/$dirname/$remote_path};
     }
     else
     {
-        $cmd = qq{sshfs $_ $fullpath};
+        $cmd = qq{sshfs $_ $home/$dirname/$remote_path};
     }
     
     print qq{Executing: "$cmd"...\n};
     $cmd .= qq{ >/dev/null 2>&1};
-    system(qq{$cmd});
+    $ret = system(qq{$cmd});
     
-    if(($umount == 1) && (-d $fullpath))
+    if(($umount == 1) && (-d qq{$home/$dirname/$remote_path}) && ($ret == 0))
     {
-        rmdir(qq{$fullpath})
-            or die qq{cant delete mount point $fullpath: $!};
+        rmtree(qq{$home/$dirname})
+            or die qq{cant delete $home/$dirname: $!};
     }
 }
 
