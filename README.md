@@ -13,6 +13,4 @@ Usage:
         
         -u Unmount mode.
 
-Will stay silent unless there are errors.
 
-NOTE: It is imperative that you use pubkey authentication.
